@@ -1,0 +1,74 @@
+LangSAM 运行命令
+================
+
+1. 进入项目目录
+
+cd /d A:\_Sofaware\项目\lang-segment-anything-main
+
+
+2. 建议创建 Python 3.10/3.11 虚拟环境
+
+python -m venv .venv
+.venv\Scripts\activate
+
+
+3. 安装 PyTorch
+
+如果使用 CUDA 12.4，可按 README 示例安装：
+
+pip install torch==2.4.1 torchvision==0.19.1 --extra-index-url https://download.pytorch.org/whl/cu124
+
+如果使用当前机器已有 CUDA 12.6 对应环境，也可以保留当前 torch 2.9.0+cu126 / torchvision 0.24.0+cu126，再安装其他缺失依赖。
+
+
+4. 安装项目依赖
+
+pip install -e .
+
+或手动安装 requirements.txt：
+
+pip install -r requirements.txt
+
+
+5. 检查依赖
+
+python 环境测试.py
+
+
+6. 启动 Gradio + LitServe 页面
+
+python app.py
+
+启动后打开：
+
+http://localhost:8000/gradio
+
+README 中写的是 http://0.0.0.0:8000/gradio，本机浏览器通常使用 http://localhost:8000/gradio 更方便。
+
+
+7. 页面使用方法
+
+选择 SAM Model：
+
+sam2.1_hiera_small
+
+默认阈值：
+
+Box Threshold: 0.3
+Text Threshold: 0.25
+
+上传图片后，在 Text Prompt 输入英文目标词，例如：
+
+wheel.
+person.
+kiwi. watermelon. blueberry.
+
+点击 Run Prediction，右侧 Output Image 会显示带 mask、框和标签的分割结果。
+
+
+8. 当前机器状态
+
+当前机器 Python 版本为 3.13.1，已检测到 torch / torchvision 和 NVIDIA RTX 4060 Laptop GPU。
+
+但 gradio、litserve、opencv-python-headless、sam-2、supervision、transformers、lang-sam 未安装，所以现在不能直接启动 app.py 做新的推理截图。
+
