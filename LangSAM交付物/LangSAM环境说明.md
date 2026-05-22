@@ -1,72 +1,80 @@
 # LangSAM 环境说明
 
-## 1. 项目位置
+## 1. 当前使用的环境
 
-- 主项目目录：`A:\_Sofaware\项目\lang-segment-anything-main`
-- 本次交付目录：`A:\_Sofaware\项目\LangSAM交付物`
-- Gradio 启动文件：`A:\_Sofaware\项目\lang-segment-anything-main\app.py`
-- 服务端文件：`A:\_Sofaware\项目\lang-segment-anything-main\lang_sam\server.py`
-- 环境检查脚本：`A:\_Sofaware\项目\lang-segment-anything-main\环境测试.py`
+本项目实际运行环境是 Conda 环境 `sam2_env`。
 
-注意：项目目录中还存在一份嵌套副本 `lang-segment-anything-main\lang-segment-anything-main`。本说明以外层项目目录为准。
+| 项目 | 当前值 |
+| --- | --- |
+| Conda 环境名 | `sam2_env` |
+| Python 路径 | `B:\_environment\Conda\envs\sam2_env\python.exe` |
+| Python 版本 | Python 3.10.20 |
+| 主项目目录 | `A:\_Sofaware\项目\lang-segment-anything-main` |
+| 交付目录 | `A:\_Sofaware\项目\LangSAM交付物` |
+| Conda 环境文件 | `A:\_Sofaware\项目\lang-segment-anything-main\项目environment.yml` |
+| 环境检查脚本 | `A:\_Sofaware\项目\lang-segment-anything-main\环境测试.py` |
 
-## 2. Python 版本
+注意：不要直接使用系统默认 Python。当前 PowerShell 默认 Python 是 3.13.1，不是本项目实际运行环境。
 
-- 项目 `pyproject.toml` 要求：Python >= 3.10
-- 建议演示环境：Python 3.10 或 Python 3.11
+## 2. 当前依赖情况
 
+已在 `sam2_env` 中执行 `环境测试.py`，主要依赖满足项目要求。
 
-## 3. 主要依赖包
+| 依赖包 | 项目要求 | 当前环境版本 | 说明 |
+| --- | --- | --- | --- |
+| torch | >= 2.3.1 | 2.6.0+cu124 | 深度学习框架 |
+| torchvision | >= 0.18.1 | 0.21.0+cu124 | 图像处理和视觉组件 |
+| transformers | >= 4.44.2 | 5.8.0 | GroundingDINO 文本检测模型 |
+| sam-2 | Git 安装 | 已安装 | SAM2 分割模型 |
+| supervision | >= 0.23.0 | 0.28.0 | 绘制 mask、框和标签 |
+| opencv-python-headless | >= 4.10.0.84 | 4.13.0.92 | 图像处理 |
+| litserve | >= 0.2.8 | 0.2.17 | 后端推理服务 |
+| gradio | >= 5.29.0 | 6.14.0 | 网页交互界面 |
 
-项目 `requirements.txt` 中的主要依赖如下：
+如果接手人不确定依赖是否完整，应优先进入 `sam2_env` 后运行：
 
-| 依赖包 | 要求版本/来源 | 用途 |
-| --- | --- | --- |
-| torch | >= 2.3.1 | 深度学习运行框架 |
-| torchvision | >= 0.18.1 | 图像处理和 PyTorch 视觉组件 |
-| transformers | >= 4.44.2 | 加载 GroundingDINO 文本检测模型 |
-| sam-2 | GitHub: facebookresearch/segment-anything-2 | SAM 2 分割模型 |
-| supervision | >= 0.23.0 | 绘制检测框、mask、标签 |
-| opencv-python-headless | >= 4.10.0.84 | 图像处理 |
-| litserve | >= 0.2.8 | 推理服务接口 |
-| gradio | >= 5.29.0 | 网页交互界面 |
-
-
-## 4. 模型文件位置
-
-当前项目目录内未发现 `.pt`、`.pth`、`.safetensors`、`.ckpt` 等本地模型权重文件。
-
-代码默认模型加载方式：
-
-| 模型 | 默认来源 | 代码位置 |
-| --- | --- | --- |
-| SAM 2.1 | `https://dl.fbaipublicfiles.com/segment_anything_2/...` 自动下载 | `lang_sam\models\sam.py` |
-| GroundingDINO | Hugging Face Hub：`IDEA-Research/grounding-dino-base` | `lang_sam\models\gdino.py` |
-
-如果需要离线运行，可以在代码中使用：
-
-```python
-LangSAM(
-    sam_ckpt_path="本地 SAM2 权重路径",
-    gdino_model_ckpt_path="本地 GroundingDINO 模型目录",
-    gdino_processor_ckpt_path="本地 GroundingDINO processor 目录",
-)
+```text
+python 环境测试.py
 ```
 
-联网运行时，模型通常会缓存到用户目录下的 PyTorch/Hugging Face 缓存目录，例如：
+如果换到新机器或环境损坏，可用项目里的 Conda 环境文件重新创建或更新环境：
 
-- `%USERPROFILE%\.cache\torch`
-- `%USERPROFILE%\.cache\huggingface`
+```text
+conda env create -f 项目environment.yml
+```
 
-## 5. 本次可交付截图
+或在已有 `sam2_env` 上更新：
 
-成功案例截图来自项目自带输出：
+```text
+conda env update -n sam2_env -f 项目environment.yml
+```
 
-- `案例截图\成功案例1_car_wheel.png`
-- `案例截图\成功案例2_fruits.png`
-- `案例截图\成功案例3_person.png`
+## 3. 模型权重位置
 
-失败案例截图为当前环境无法启动的说明图：
+SAM2 权重文件保存在项目目录内：
 
-- `案例截图\失败案例1_当前环境依赖缺失无法启动.png`
+```text
+A:\_Sofaware\项目\lang-segment-anything-main\torch\hub\checkpoints
+```
 
+当前已存在的权重文件：
+
+| 文件名 | 说明 |
+| --- | --- |
+| `sam2.1_hiera_small.pt` | 默认演示使用的小模型权重 |
+| `sam2.1_hiera_large.pt` | 大模型权重 |
+
+代码已调整为优先从项目内 `torch\hub\checkpoints` 加载 SAM2 权重；如果缺少对应权重，才会下载到该目录。
+
+GroundingDINO 默认从 Hugging Face Hub 加载：`IDEA-Research/grounding-dino-base`。
+
+## 4. 主要运行文件
+
+| 文件 | 作用 |
+| --- | --- |
+| `app.py` | 启动 LitServe 后端和 Gradio 页面 |
+| `lang_sam\server.py` | LitServe 推理服务，提供 `/predict` 接口 |
+| `环境测试.py` | 检查核心依赖是否安装且版本满足要求 |
+| `项目environment.yml` | Conda 环境配置文件 |
+
+项目目录中还存在一份嵌套副本 `lang-segment-anything-main\lang-segment-anything-main`。本交付说明以外层项目目录为准。

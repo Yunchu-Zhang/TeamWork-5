@@ -6,49 +6,63 @@ LangSAM 运行命令
 cd /d A:\_Sofaware\项目\lang-segment-anything-main
 
 
-2. 建议创建 Python 3.10/3.11 虚拟环境
+2. 确认项目自带的 Conda 环境文件
 
-python -m venv .venv
-.venv\Scripts\activate
+dir 项目environment.yml
 
+该文件用于创建或更新运行环境，环境名为 sam2_env。
 
-3. 安装 PyTorch
+如果当前机器还没有 sam2_env，可执行：
 
-如果使用 CUDA 12.4，可按 README 示例安装：
+conda env create -f 项目environment.yml
 
-pip install torch==2.4.1 torchvision==0.19.1 --extra-index-url https://download.pytorch.org/whl/cu124
+如果已经有 sam2_env，但担心依赖不完整，可执行：
 
-如果使用当前机器已有 CUDA 12.6 对应环境，也可以保留当前 torch 2.9.0+cu126 / torchvision 0.24.0+cu126，再安装其他缺失依赖。
-
-
-4. 安装项目依赖
-
-pip install -e .
-
-或手动安装 requirements.txt：
-
-pip install -r requirements.txt
+conda env update -n sam2_env -f 项目environment.yml
 
 
-5. 检查依赖
+3. 进入 Conda 环境
+
+conda activate sam2_env
+
+进入后检查 Python 版本：
+
+python --version
+
+应显示：
+
+Python 3.10.20
+
+如果 PowerShell 中 conda activate 不可用，可以直接使用该环境的 Python：
+
+B:\_environment\Conda\envs\sam2_env\python.exe
+
+
+4. 检查依赖是否安装好
 
 python 环境测试.py
 
+正常结果应显示主要依赖均为“已安装”或“满足要求”，最后显示：
 
-6. 启动 Gradio + LitServe 页面
+所有依赖版本都满足要求！
+
+如果提示缺少 gradio、litserve、transformers、sam-2 等依赖，通常说明没有进入 sam2_env，或需要用 项目environment.yml 更新环境。
+
+
+5. 启动 Gradio 页面
 
 python app.py
 
-启动后打开：
+启动后在浏览器打开：
 
 http://localhost:8000/gradio
 
-README 中写的是 http://0.0.0.0:8000/gradio，本机浏览器通常使用 http://localhost:8000/gradio 更方便。
+README 中写的是 http://0.0.0.0:8000/gradio，本机浏览器通常使用 http://localhost:8000/gradio。
 
 
-7. 页面使用方法
+6. 页面使用方法
 
-选择 SAM Model：
+SAM Model 选择：
 
 sam2.1_hiera_small
 
@@ -63,12 +77,25 @@ wheel.
 person.
 kiwi. watermelon. blueberry.
 
-点击 Run Prediction，右侧 Output Image 会显示带 mask、框和标签的分割结果。
+点击 Run Prediction，右侧 Output Image 会显示带 mask、检测框和标签的分割结果。
 
 
-8. 当前机器状态
+7. 只启动后端接口
 
-当前机器 Python 版本为 3.13.1，已检测到 torch / torchvision 和 NVIDIA RTX 4060 Laptop GPU。
+如果不需要 Gradio 页面，只想给后端调用 /predict 接口，可运行：
 
-但 gradio、litserve、opencv-python-headless、sam-2、supervision、transformers、lang-sam 未安装，所以现在不能直接启动 app.py 做新的推理截图。
+python lang_sam\server.py
 
+接口地址：
+
+http://localhost:8000/predict
+
+接口输入为 multipart/form-data，主要字段包括：
+
+image: 图片文件
+sam_type: sam2.1_hiera_small
+box_threshold: 0.3
+text_threshold: 0.25
+text_prompt: 英文提示词，例如 person.
+
+接口返回 image/png，即带 mask、框和标签的结果图。

@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import numpy as np
 import torch
 from hydra import compose
@@ -27,6 +29,16 @@ SAM_MODELS = {
     },
 }
 
+def _find_project_checkpoint_dir() -> Path:
+    for parent in Path(__file__).resolve().parents:
+        checkpoint_dir = parent / "torch" / "hub" / "checkpoints"
+        if checkpoint_dir.exists():
+            return checkpoint_dir
+    return Path(__file__).resolve().parents[2] / "torch" / "hub" / "checkpoints"
+
+
+PROJECT_CHECKPOINT_DIR = _find_project_checkpoint_dir()
+
 
 class SAM:
     def build_model(self, sam_type: str, ckpt_path: str | None = None, device=DEVICE):
@@ -44,16 +56,27 @@ class SAM:
     def _load_checkpoint(self, model: torch.nn.Module):
         if self.ckpt_path is None:
             checkpoint_url = SAM_MODELS[self.sam_type]["url"]
-            state_dict = torch.hub.load_state_dict_from_url(checkpoint_url, map_location="cpu")["model"]
+            checkpoint_path = PROJECT_CHECKPOINT_DIR / Path(checkpoint_url).name
+            if checkpoint_path.exists():
+                checkpoint_source = str(checkpoint_path)
+                state_dict = torch.load(checkpoint_path, map_location="cpu", weights_only=True)["model"]
+            else:
+                PROJECT_CHECKPOINT_DIR.mkdir(parents=True, exist_ok=True)
+                checkpoint_source = checkpoint_url
+                state_dict = torch.hub.load_state_dict_from_url(
+                    checkpoint_url,
+                    model_dir=str(PROJECT_CHECKPOINT_DIR),
+                    map_location="cpu",
+                )["model"]
         else:
-            checkpoint_url = self.ckpt_path  # Ensure checkpoint_url is defined
+            checkpoint_source = self.ckpt_path
             state_dict = torch.load(self.ckpt_path, map_location="cpu", weights_only=True)["model"]
         try:
             model.load_state_dict(state_dict, strict=True)
         except Exception as e:
             raise ValueError(
                 f"Problem loading SAM please make sure you have the right model type: {self.sam_type} \
-                and a working checkpoint: {checkpoint_url}. Recommend deleting the checkpoint and \
+                and a working checkpoint: {checkpoint_source}. Recommend deleting the checkpoint and \
                 re-downloading it. Error: {e}"
             )
 
