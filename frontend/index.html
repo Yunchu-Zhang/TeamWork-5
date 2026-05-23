@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CampusSeg² 校园场景图像智能分割</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='12' cy='12' r='10' fill='%2300F2FE'/%3E%3Ccircle cx='20' cy='20' r='10' fill='%239D4EDD'/%3E%3C/svg%3E" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body data-page="home">
+    <header class="site-header">
+      <a class="brand" href="./index.html" aria-label="CampusSeg 首页">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <span>CampusSeg²</span>
+      </a>
+      <button class="menu-button" type="button" aria-label="打开导航">
+        <span></span>
+        <span></span>
+      </button>
+      <nav class="site-nav" aria-label="主导航">
+        <a class="active" href="./index.html" data-zh="首页" data-en="Home">首页</a>
+        <a href="./workspace.html" data-zh="工作台" data-en="Workspace">工作台</a>
+        <a href="./compare.html" data-zh="效果对比" data-en="Results">效果对比</a>
+        <a href="./scenes.html" data-zh="场景库" data-en="Scenes">场景库</a>
+      </nav>
+      <div class="header-actions">
+        <button class="language-toggle" type="button" aria-label="切换语言">
+          <span>中文</span>
+          <i>/</i>
+          <span>English</span>
+        </button>
+        <a class="header-cta" href="./workspace.html" data-zh="开始处理" data-en="Start">开始处理</a>
+      </div>
+    </header>
+
+    <main class="home-main">
+      <section class="hero product-hero">
+        <div class="hero-copy">
+          <p class="eyebrow" data-zh="Campus Image Extraction" data-en="Campus Image Extraction">Campus Image Extraction</p>
+          <h1 data-zh="校园场景图像智能分割" data-en="Campus Scene Image Segmentation">校园场景图像智能分割</h1>
+          <p class="hero-lead" data-zh="把校园照片中的物体快速提取成透明素材，适合海报、短视频、课件和互动作品"
+            data-en="Extract objects from campus photos into transparent assets for posters, videos, courseware, and interactive works">
+            把校园照片中的物体快速提取成透明素材，适合海报、短视频、课件和互动作品
+          </p>
+          <div class="hero-actions">
+            <a class="primary-link" href="./workspace.html" data-zh="进入工作台" data-en="Open Workspace">进入工作台</a>
+            <a class="secondary-link" href="./scenes.html" data-zh="选择测试场景" data-en="Pick a Scene">选择测试场景</a>
+          </div>
+        </div>
+        <div class="hero-visual" data-tilt aria-label="图像分割工作台预览">
+          <img src="./assets/campus-segmentation-scene.png" alt="校园场景分割示意图" />
+          <div class="focus-bracket bracket-a" aria-hidden="true"></div>
+          <div class="focus-bracket bracket-b" aria-hidden="true"></div>
+          <div class="hero-readout" aria-hidden="true">
+            <span>SAM2</span>
+            <span>LangSAM</span>
+            <span>PNG</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="section workflow-section">
+        <div class="section-intro">
+          <p class="eyebrow" data-zh="Workflow" data-en="Workflow">Workflow</p>
+          <h2 data-zh="上传、选取、生成、对比" data-en="Upload, select, generate, compare">上传、选取、生成、对比</h2>
+        </div>
+        <div class="workflow-rail">
+          <article>
+            <b>01</b>
+            <h3 data-zh="上传校园图片" data-en="Upload image">上传校园图片</h3>
+            <p data-zh="从本地选择校园场景" data-en="Choose a campus scene">从本地选择校园场景</p>
+          </article>
+          <article>
+            <b>02</b>
+            <h3 data-zh="确定目标" data-en="Set target">确定目标</h3>
+            <p data-zh="用坐标或文字锁定对象" data-en="Lock the object by point or text">用坐标或文字锁定对象</p>
+          </article>
+          <article>
+            <b>03</b>
+            <h3 data-zh="查看结果" data-en="Review results">查看结果</h3>
+            <p data-zh="查看透明素材与效果对比" data-en="Review assets and result comparison">查看透明素材与效果对比</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="section launch-band">
+        <div>
+          <p class="eyebrow" data-zh="Workspace Ready" data-en="Workspace Ready">Workspace Ready</p>
+          <h2 data-zh="从工作台开始一次提取" data-en="Start an extraction from the workspace">从工作台开始一次提取</h2>
+        </div>
+        <a class="primary-link" href="./workspace.html" data-zh="打开工作台" data-en="Open Workspace">打开工作台</a>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <span>CampusSeg²</span>
+      <span data-zh="校园场景图像智能分割工具" data-en="Campus scene image segmentation tool">校园场景图像智能分割工具</span>
+    </footer>
+
+    <script src="./app.js" defer></script>
+  </body>
+</html>

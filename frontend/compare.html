@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>效果对比 - CampusSeg²</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='12' cy='12' r='10' fill='%2300F2FE'/%3E%3Ccircle cx='20' cy='20' r='10' fill='%239D4EDD'/%3E%3C/svg%3E" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body data-page="compare">
+    <header class="site-header">
+      <a class="brand" href="./index.html" aria-label="CampusSeg 首页">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <span>CampusSeg²</span>
+      </a>
+      <button class="menu-button" type="button" aria-label="打开导航">
+        <span></span>
+        <span></span>
+      </button>
+      <nav class="site-nav" aria-label="主导航">
+        <a href="./index.html" data-zh="首页" data-en="Home">首页</a>
+        <a href="./workspace.html" data-zh="工作台" data-en="Workspace">工作台</a>
+        <a class="active" href="./compare.html" data-zh="效果对比" data-en="Results">效果对比</a>
+        <a href="./scenes.html" data-zh="场景库" data-en="Scenes">场景库</a>
+      </nav>
+      <div class="header-actions">
+        <button class="language-toggle" type="button" aria-label="切换语言">
+          <span>中文</span>
+          <i>/</i>
+          <span>English</span>
+        </button>
+      </div>
+    </header>
+
+    <main class="compare-page">
+      <section id="comparisonEmpty" class="comparison-empty">
+        <p class="eyebrow" data-zh="Results" data-en="Results">Results</p>
+        <h1 data-zh="请先在工作台完成一次提取" data-en="Start from the workspace first">请先在工作台完成一次提取</h1>
+        <p data-zh="上传图像并选择目标后这里会使用同一张图像和同一个目标展示 SAM2 与 LangSAM 的左右结果"
+          data-en="After uploading an image and selecting a target, this page will show SAM2 and LangSAM results for the same image side by side">
+          上传图像并选择目标后这里会使用同一张图像和同一个目标展示 SAM2 与 LangSAM 的左右结果
+        </p>
+        <a class="primary-link" href="./workspace.html" data-zh="前往工作台" data-en="Open Workspace">前往工作台</a>
+      </section>
+
+      <section id="comparisonReady" class="comparison-ready hidden">
+        <div class="compare-topline">
+          <div>
+            <p class="eyebrow" data-zh="Same image, same target" data-en="Same image, same target">Same image, same target</p>
+            <h1 data-zh="SAM2 / LangSAM 效果对比" data-en="SAM2 / LangSAM result comparison">SAM2 / LangSAM 效果对比</h1>
+          </div>
+          <a class="plain-button" href="./workspace.html" data-zh="返回工作台" data-en="Back to Workspace">返回工作台</a>
+        </div>
+
+        <div class="job-strip">
+          <span id="compareFileName">--</span>
+          <span id="compareTarget">--</span>
+          <span id="compareMethod">--</span>
+        </div>
+
+        <div class="compare-columns">
+          <article class="compare-pane" data-tilt>
+            <div class="pane-head">
+              <span>SAM2</span>
+              <b data-zh="点选结果" data-en="Point result">点选结果</b>
+            </div>
+            <div class="compare-image-wrap">
+              <img id="compareSamSource" alt="SAM2 输入图像" />
+              <span id="compareSamPoint" class="point-marker compare-point" aria-hidden="true"></span>
+            </div>
+            <div id="samResultSlot" class="algorithm-output"></div>
+          </article>
+
+          <article class="compare-pane" data-tilt>
+            <div class="pane-head">
+              <span>LangSAM</span>
+              <b data-zh="文本结果" data-en="Text result">文本结果</b>
+            </div>
+            <div class="compare-image-wrap">
+              <img id="compareLangSource" alt="LangSAM 输入图像" />
+            </div>
+            <div id="langResultSlot" class="algorithm-output"></div>
+          </article>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <span>CampusSeg²</span>
+      <span data-zh="效果对比" data-en="Result comparison">效果对比</span>
+    </footer>
+
+    <script src="./app.js" defer></script>
+  </body>
+</html>

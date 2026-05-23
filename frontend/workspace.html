@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>工作台 - CampusSeg²</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='12' cy='12' r='10' fill='%2300F2FE'/%3E%3Ccircle cx='20' cy='20' r='10' fill='%239D4EDD'/%3E%3C/svg%3E" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body data-page="workspace">
+    <header class="site-header">
+      <a class="brand" href="./index.html" aria-label="CampusSeg 首页">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <span>CampusSeg²</span>
+      </a>
+      <button class="menu-button" type="button" aria-label="打开导航">
+        <span></span>
+        <span></span>
+      </button>
+      <nav class="site-nav" aria-label="主导航">
+        <a href="./index.html" data-zh="首页" data-en="Home">首页</a>
+        <a class="active" href="./workspace.html" data-zh="工作台" data-en="Workspace">工作台</a>
+        <a href="./compare.html" data-zh="效果对比" data-en="Results">效果对比</a>
+        <a href="./scenes.html" data-zh="场景库" data-en="Scenes">场景库</a>
+      </nav>
+      <div class="header-actions">
+        <button class="language-toggle" type="button" aria-label="切换语言">
+          <span>中文</span>
+          <i>/</i>
+          <span>English</span>
+        </button>
+      </div>
+    </header>
+
+    <main class="workspace-page">
+      <section class="workspace-shell">
+        <aside class="command-panel">
+          <div class="panel-header">
+            <p class="eyebrow" data-zh="Workspace" data-en="Workspace">Workspace</p>
+            <h1 data-zh="图像提取工作台" data-en="Image extraction workspace">图像提取工作台</h1>
+          </div>
+
+          <div class="tool-block upload-block">
+            <div class="block-title">
+              <h2 data-zh="上传图像" data-en="Upload Image">上传图像</h2>
+              <span id="uploadStatus" data-zh="未选择" data-en="No file">未选择</span>
+            </div>
+            <button id="dropArea" class="upload-control" type="button">
+              <strong data-zh="选择校园场景图片" data-en="Choose a campus image">选择校园场景图片</strong>
+              <small data-zh="JPG / PNG / WEBP" data-en="JPG / PNG / WEBP">JPG / PNG / WEBP</small>
+            </button>
+            <input id="imageFile" class="file-input" type="file" accept="image/png,image/jpeg,image/webp" />
+          </div>
+
+          <div class="tool-block">
+            <div class="block-title">
+              <h2 data-zh="提取方式" data-en="Method">提取方式</h2>
+              <span id="methodLabel">SAM2</span>
+            </div>
+            <div class="segmented-control" role="tablist" aria-label="提取方式">
+              <button class="method-button active" type="button" data-method="sam2" role="tab" aria-selected="true">SAM2</button>
+              <button class="method-button" type="button" data-method="langsam" role="tab" aria-selected="false">LangSAM</button>
+            </div>
+          </div>
+
+          <div id="samPanel" class="tool-block">
+            <div class="block-title">
+              <h2 data-zh="点选目标" data-en="Point Target">点选目标</h2>
+              <span id="pointReadout">X -- / Y --</span>
+            </div>
+            <p data-zh="上传图像后在画布中点击需要提取的物体" data-en="After upload, click the object to extract on the canvas">
+              上传图像后在画布中点击需要提取的物体
+            </p>
+          </div>
+
+          <div id="langPanel" class="tool-block hidden">
+            <div class="block-title">
+              <h2 data-zh="文本目标" data-en="Text Target">文本目标</h2>
+              <span id="promptStatus" data-zh="未填写" data-en="Empty">未填写</span>
+            </div>
+            <input id="targetPrompt" class="text-input" type="text" placeholder="例如：白色水杯" data-placeholder-zh="例如：白色水杯" data-placeholder-en="Example: white cup" />
+            <div class="prompt-chip-row">
+              <button type="button" data-prompt="白色水杯">白色水杯</button>
+              <button type="button" data-prompt="笔记本电脑">笔记本电脑</button>
+              <button type="button" data-prompt="书包">书包</button>
+            </div>
+          </div>
+
+          <div class="tool-actions">
+            <button id="extractButton" class="primary-button" type="button" disabled data-zh="提取目标" data-en="Extract Target">提取目标</button>
+            <a id="compareLink" class="plain-button disabled" href="./compare.html" aria-disabled="true" data-zh="查看效果对比" data-en="View Results">查看效果对比</a>
+            <button id="clearButton" class="plain-button" type="button" data-zh="清空" data-en="Clear">清空</button>
+          </div>
+        </aside>
+
+        <section class="workspace-main" data-tilt>
+          <div class="canvas-header">
+            <span id="canvasTitle" data-zh="图像画布" data-en="Image Canvas">图像画布</span>
+            <span id="canvasStatus" data-zh="请上传图像" data-en="Please upload an image">请上传图像</span>
+          </div>
+          <div id="imageCanvas" class="image-canvas empty">
+            <div id="emptyCanvas" class="empty-message">
+              <strong data-zh="请上传图像" data-en="Please upload an image">请上传图像</strong>
+              <small data-zh="上传后可预览图片并选择目标" data-en="Preview the image and select a target after upload">
+                上传后可预览图片并选择目标
+              </small>
+            </div>
+            <img id="previewImage" alt="已上传的校园场景图片" />
+            <span id="pointMarker" class="point-marker" aria-hidden="true"></span>
+            <span class="scanline" aria-hidden="true"></span>
+          </div>
+
+          <div class="result-grid">
+            <article class="result-panel">
+              <div>
+                <h2 data-zh="原图" data-en="Source">原图</h2>
+                <p data-zh="上传后显示" data-en="Shown after upload">上传后显示</p>
+              </div>
+              <div id="sourceSlot" class="result-slot">
+                <span data-zh="等待图像" data-en="Waiting for image">等待图像</span>
+              </div>
+            </article>
+            <article class="result-panel">
+              <div>
+                <h2 data-zh="分割区域" data-en="Mask">分割区域</h2>
+                <p data-zh="处理完成后显示" data-en="Shown after processing">处理完成后显示</p>
+              </div>
+              <div class="result-slot">
+                <span id="maskSlotText" data-zh="等待结果" data-en="Waiting for result">等待结果</span>
+              </div>
+            </article>
+            <article class="result-panel">
+              <div>
+                <h2>PNG</h2>
+                <p data-zh="透明背景素材" data-en="Transparent-background asset">透明背景素材</p>
+              </div>
+              <div class="result-slot checker">
+                <span id="pngSlotText" data-zh="等待结果" data-en="Waiting for result">等待结果</span>
+              </div>
+              <button id="downloadButton" class="plain-button" type="button" disabled data-zh="下载 PNG" data-en="Download PNG">下载 PNG</button>
+            </article>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <span>CampusSeg²</span>
+      <span data-zh="工作台" data-en="Workspace">工作台</span>
+    </footer>
+
+    <script src="./app.js" defer></script>
+  </body>
+</html>
