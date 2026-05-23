@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>场景库 - CampusSeg²</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='12' cy='12' r='10' fill='%2300F2FE'/%3E%3Ccircle cx='20' cy='20' r='10' fill='%239D4EDD'/%3E%3C/svg%3E" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body data-page="scenes">
+    <header class="site-header">
+      <a class="brand" href="./index.html" aria-label="CampusSeg 首页">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <span>CampusSeg²</span>
+      </a>
+      <button class="menu-button" type="button" aria-label="打开导航">
+        <span></span>
+        <span></span>
+      </button>
+      <nav class="site-nav" aria-label="主导航">
+        <a href="./index.html" data-zh="首页" data-en="Home">首页</a>
+        <a href="./workspace.html" data-zh="工作台" data-en="Workspace">工作台</a>
+        <a href="./compare.html" data-zh="效果对比" data-en="Results">效果对比</a>
+        <a class="active" href="./scenes.html" data-zh="场景库" data-en="Scenes">场景库</a>
+      </nav>
+      <div class="header-actions">
+        <button class="language-toggle" type="button" aria-label="切换语言">
+          <span>中文</span>
+          <i>/</i>
+          <span>English</span>
+        </button>
+      </div>
+    </header>
+
+    <main class="scenes-page">
+      <section class="page-head">
+        <p class="eyebrow" data-zh="Scene Library" data-en="Scene Library">Scene Library</p>
+        <h1 data-zh="选择典型校园场景" data-en="Choose a campus scene">选择典型校园场景</h1>
+        <p data-zh="点击场景后查看该类图片素材区域，后续可直接从这里进入工作台"
+          data-en="Choose a scene to view its image material area and open it in the workspace">
+          点击场景后查看该类图片素材区域，后续可直接从这里进入工作台
+        </p>
+      </section>
+
+      <section class="scene-workspace">
+        <div id="sceneSelector" class="scene-album" aria-label="场景选择">
+          <button class="scene-card active" type="button" data-scene="classroom">
+            <img src="./assets/scene-classroom.png" alt="教室场景" />
+            <span data-zh="教室" data-en="Classroom">教室</span>
+            <small data-zh="讲台 课桌 投影" data-en="Podium desks projector">讲台 课桌 投影</small>
+          </button>
+          <button class="scene-card" type="button" data-scene="library">
+            <img src="./assets/scene-library.png" alt="图书馆场景" />
+            <span data-zh="图书馆" data-en="Library">图书馆</span>
+            <small data-zh="书架 阅览座 学习物品" data-en="Shelves seats study tools">书架 阅览座 学习物品</small>
+          </button>
+          <button class="scene-card" type="button" data-scene="dorm">
+            <img src="./assets/scene-dorm.png" alt="宿舍桌面场景" />
+            <span data-zh="宿舍桌面" data-en="Dorm Desk">宿舍桌面</span>
+            <small data-zh="桌面 台灯 电脑" data-en="Desk lamp laptop">桌面 台灯 电脑</small>
+          </button>
+          <button class="scene-card" type="button" data-scene="cafeteria">
+            <img src="./assets/scene-cafeteria.png" alt="食堂场景" />
+            <span data-zh="食堂" data-en="Cafeteria">食堂</span>
+            <small data-zh="餐盘 饮品 桌面" data-en="Trays drinks tables">餐盘 饮品 桌面</small>
+          </button>
+          <button class="scene-card" type="button" data-scene="outdoor">
+            <img src="./assets/scene-outdoor.png" alt="校园户外场景" />
+            <span data-zh="校园户外" data-en="Outdoor">校园户外</span>
+            <small data-zh="道路 建筑 活动物料" data-en="Roads buildings event items">道路 建筑 活动物料</small>
+          </button>
+          <button class="scene-card" type="button" data-scene="lab">
+            <img src="./assets/scene-lab.png" alt="实验室场景" />
+            <span data-zh="实验室" data-en="Lab">实验室</span>
+            <small data-zh="设备 屏幕 工具" data-en="Devices screens tools">设备 屏幕 工具</small>
+          </button>
+        </div>
+
+        <div id="scenePreview" class="scene-preview" data-tilt>
+          <div class="scene-preview-head">
+            <div>
+              <p class="eyebrow" id="sceneKicker">Classroom</p>
+              <h2 id="sceneTitle" data-zh="教室" data-en="Classroom">教室</h2>
+            </div>
+            <a id="sceneUseLink" class="plain-button disabled" href="./workspace.html" aria-disabled="true" data-zh="使用该图片" data-en="Use Image">使用该图片</a>
+          </div>
+          <div id="sceneImageArea" class="scene-image-area" aria-label="测试图片区域"></div>
+          <p id="sceneDescription" data-zh="可放入讲台、黑板内容、书本、笔记本电脑和演示道具图片" data-en="Prepared images can include podiums, board content, books, laptops, and presentation props">
+            可放入讲台、黑板内容、书本、笔记本电脑和演示道具图片
+          </p>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <span>CampusSeg²</span>
+      <span data-zh="场景库" data-en="Scene library">场景库</span>
+    </footer>
+
+    <script src="./app.js" defer></script>
+  </body>
+</html>
