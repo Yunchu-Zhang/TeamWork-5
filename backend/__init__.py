@@ -1,0 +1,1 @@
+"""Campus segmentation backend package."""
