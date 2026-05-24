@@ -1,2 +1,4 @@
 lang-segment-anything-main/torch/hub/checkpoints/sam2.1_hiera_large.pt
 lang-segment-anything-main/torch/hub/checkpoints/sam2.1_hiera_small.pt
+backend/.venv/
+backend/runtime/
