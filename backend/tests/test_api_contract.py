@@ -109,6 +109,34 @@ class ApiContractTests(unittest.TestCase):
 
         self.assertEqual(lang_adapter.calls, [((8, 6), "cup")])
 
+    def test_lang_endpoint_accepts_scene_library_path(self):
+        lang_adapter = FakeLangAdapter()
+        with TemporaryDirectory() as tmp:
+            runtime_root = Path(tmp)
+            app = create_app(
+                point_adapter=FakePointAdapter(),
+                lang_adapter=lang_adapter,
+                runtime_root=runtime_root,
+            )
+            response = TestClient(app).post(
+                "/segment/lang",
+                data={
+                    "scene_image": "./assets/test-scenes/classroom/10_medium_classroom_bottle_desk.jpg",
+                    "text_prompt": "bottle",
+                },
+            )
+
+            body = response.json()
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(body["status"], "success")
+            self.assertEqual(body["method"], "lang")
+            self.assertRegex(body["original_url"], r"^/uploads/.+\.jpg$")
+            self.assertTrue((runtime_root / body["original_url"].lstrip("/")).is_file())
+
+        self.assertEqual(len(lang_adapter.calls), 1)
+        self.assertGreater(lang_adapter.calls[0][0][0], 0)
+        self.assertEqual(lang_adapter.calls[0][1], "bottle")
+
 
 if __name__ == "__main__":
     unittest.main()

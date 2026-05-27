@@ -3,19 +3,22 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Protocol
+from urllib.parse import unquote, urlparse
 
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from PIL import Image, UnidentifiedImageError
 
-from backend.services.files import RuntimePaths, save_upload_image
+from backend.services.files import RuntimePaths, save_existing_image, save_upload_image
 from backend.services.langsam_adapter import LangSAMAdapter
 from backend.services.masks import NoMaskFound, export_mask_assets
 from backend.services.sam2_adapter import SAM2PointAdapter
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
+FRONTEND_ROOT = PROJECT_ROOT / "frontend"
+SCENE_IMAGE_ROOT = FRONTEND_ROOT / "assets" / "test-scenes"
 DEFAULT_RUNTIME_ROOT = Path(__file__).resolve().parent / "runtime"
 DEFAULT_LANGSAM_SOURCE = next(
     (path for path in PROJECT_ROOT.glob("*lang-segment-anything-main") if path.is_dir()),
@@ -78,12 +81,13 @@ def create_app(
 
     @app.post("/segment/point")
     async def segment_point(
-        image: UploadFile = File(...),
+        image: UploadFile | None = File(None),
+        scene_image: str | None = Form(None),
         x: int = Form(...),
         y: int = Form(...),
         point_label: int = Form(1),
     ) -> dict[str, str]:
-        loaded = await _save_input(image, paths)
+        loaded = await _save_input(image, paths, scene_image)
         try:
             mask = point_adapter.segment(loaded.image, x=x, y=y, point_label=point_label)
             return _save_outputs("point", loaded, mask, paths)
@@ -96,11 +100,12 @@ def create_app(
 
     @app.post("/segment/lang")
     async def segment_lang(
-        image: UploadFile = File(...),
+        image: UploadFile | None = File(None),
+        scene_image: str | None = Form(None),
         prompt: str | None = Form(None),
         text_prompt: str | None = Form(None),
     ) -> dict[str, str]:
-        loaded = await _save_input(image, paths)
+        loaded = await _save_input(image, paths, scene_image)
         resolved_prompt = (prompt or text_prompt or "").strip()
         if not resolved_prompt:
             raise HTTPException(status_code=422, detail="prompt or text_prompt is required")
@@ -118,13 +123,41 @@ def create_app(
     return app
 
 
-async def _save_input(upload: UploadFile, paths: RuntimePaths):
+async def _save_input(upload: UploadFile | None, paths: RuntimePaths, scene_image: str | None = None):
     try:
-        return await save_upload_image(upload, paths.uploads)
+        if upload is not None:
+            return await save_upload_image(upload, paths.uploads)
+        if scene_image:
+            return save_existing_image(_resolve_scene_image(scene_image), paths.uploads)
+        raise ValueError("image or scene_image is required")
     except UnidentifiedImageError as exc:
         raise HTTPException(status_code=415, detail="Uploaded file is not a readable image") from exc
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+def _resolve_scene_image(scene_image: str) -> Path:
+    value = scene_image.strip().replace("\\", "/")
+    parsed = urlparse(value)
+    if parsed.scheme and parsed.scheme != "file":
+        raise ValueError("scene_image must be a local scene asset")
+
+    if parsed.scheme == "file":
+        value = unquote(parsed.path).replace("\\", "/")
+        marker = "/frontend/"
+        marker_index = value.lower().find(marker)
+        if marker_index >= 0:
+            value = value[marker_index + len(marker) :]
+    else:
+        value = unquote(value)
+
+    while value.startswith("./"):
+        value = value[2:]
+    candidate = (FRONTEND_ROOT / value).resolve()
+    scene_root = SCENE_IMAGE_ROOT.resolve()
+    if not candidate.is_file() or not candidate.is_relative_to(scene_root):
+        raise ValueError("scene_image is not an allowed scene asset")
+    return candidate
 
 
 def _save_outputs(method: str, loaded, mask, paths: RuntimePaths) -> dict[str, str]:

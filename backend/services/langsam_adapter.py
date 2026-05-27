@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from pathlib import Path
 import sys
 
@@ -23,6 +24,15 @@ class LangSAMAdapter:
         self.box_threshold = box_threshold
         self.text_threshold = text_threshold
         self._model = None
+
+    def _resolve_gdino_paths(self) -> tuple[str | None, str | None]:
+        model_path = os.environ.get("CAMPUSSEG_GDINO_MODEL_PATH")
+        processor_path = os.environ.get("CAMPUSSEG_GDINO_PROCESSOR_PATH")
+        local_dir = self.model_cache_dir / "grounding-dino-base"
+        if local_dir.exists():
+            model_path = model_path or str(local_dir)
+            processor_path = processor_path or str(local_dir)
+        return model_path, processor_path
 
     def segment(self, image: Image.Image, prompt: str) -> np.ndarray:
         prompt = prompt.strip()
@@ -54,6 +64,14 @@ class LangSAMAdapter:
         if source not in sys.path:
             sys.path.insert(0, source)
 
+        gdino_model_path, gdino_processor_path = self._resolve_gdino_paths()
+        allow_download = os.environ.get("CAMPUSSEG_LANGSAM_ALLOW_DOWNLOAD", "").lower() in {"1", "true", "yes"}
+        if not (gdino_model_path and gdino_processor_path) and not allow_download:
+            raise RuntimeError(
+                "LangSAM needs GroundingDINO model files. Put them in backend/runtime/models/grounding-dino-base "
+                "or set CAMPUSSEG_LANGSAM_ALLOW_DOWNLOAD=1 to allow online download."
+            )
+
         checkpoint = ensure_sam2_checkpoint(self.model_cache_dir)
         device = select_torch_device()
         from lang_sam import LangSAM
@@ -61,6 +79,8 @@ class LangSAMAdapter:
         self._model = LangSAM(
             sam_type=SAM2_MODEL_TYPE,
             sam_ckpt_path=str(checkpoint),
+            gdino_model_ckpt_path=gdino_model_path,
+            gdino_processor_ckpt_path=gdino_processor_path,
             device=device,
         )
         return self._model

@@ -63,12 +63,35 @@ test("workspace hands an uploaded extraction job to comparison page", async () =
   assert.match(script, /compare\.html/);
 });
 
+test("workspace clear removes the saved comparison job", async () => {
+  const script = await readSource("app.js");
+  assert.match(script, /function clearComparisonJob\(\)/);
+  assert.match(script, /localStorage\.removeItem\(storageKey\)/);
+  assert.match(script, /sessionStorage\.removeItem\(storageKey\)/);
+  assert.match(script, /clearComparisonJob\(\)/);
+});
+
+test("workspace previews scene library images when opened from a file URL", async () => {
+  const script = await readSource("app.js");
+  assert.match(script, /campusseg-selected-scene/);
+  assert.match(script, /setSceneImagePreview\(sceneImage, name\)/);
+  assert.match(script, /hasSceneImageSource/);
+  assert.match(script, /formData\.append\("scene_image"/);
+  assert.match(script, /cacheSceneImageForWorkspace/);
+  assert.match(script, /dataUrlToFile/);
+  assert.match(script, /imageElementToFile\(previewImage, name\)/);
+  assert.match(script, /fetch\(sceneImage\)/);
+});
+
 test("workspace submits real segmentation requests and renders returned assets", async () => {
   const script = await readSource("app.js");
   assert.match(script, /new FormData\(\)/);
   assert.match(script, /\/segment\/point/);
   assert.match(script, /\/segment\/lang/);
+  assert.match(script, /readSegmentError/);
+  assert.match(script, /AbortController/);
   assert.match(script, /formData\.append\("image"/);
+  assert.match(script, /formData\.append\("scene_image"/);
   assert.match(script, /formData\.append\("x"/);
   assert.match(script, /formData\.append\("y"/);
   assert.match(script, /formData\.append\("point_label", "1"\)/);

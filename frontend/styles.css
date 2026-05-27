@@ -481,7 +481,7 @@ h3 {
 
 .workflow-rail {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 16px;
 }
 
@@ -503,20 +503,6 @@ h3 {
   transform: translateY(-6px);
   border-color: rgba(49, 225, 244, 0.56);
   box-shadow: 0 28px 70px rgba(0, 0, 0, 0.34), 0 0 30px rgba(49, 225, 244, 0.1);
-}
-
-.workflow-rail article::before {
-  position: absolute;
-  top: 18px;
-  right: 18px;
-  width: 42px;
-  height: 42px;
-  content: "";
-  background:
-    linear-gradient(90deg, transparent 47%, rgba(49, 225, 244, 0.8) 48% 52%, transparent 53%),
-    linear-gradient(0deg, transparent 47%, rgba(49, 225, 244, 0.8) 48% 52%, transparent 53%);
-  opacity: 0.46;
-  transform: rotate(45deg);
 }
 
 .workflow-rail b {
@@ -913,6 +899,17 @@ body[data-page="compare"] .compare-page {
   justify-content: space-between;
   gap: 24px;
   align-items: end;
+}
+
+.compare-topline > div {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.compare-topline h1 {
+  max-width: none;
+  font-size: clamp(32px, 4.2vw, 56px);
+  white-space: nowrap;
 }
 
 .job-strip {
@@ -1385,5 +1382,9 @@ body[data-page="compare"] .site-footer {
   .site-footer {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .compare-topline h1 {
+    white-space: normal;
   }
 }

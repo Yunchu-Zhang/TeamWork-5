@@ -1,7 +1,9 @@
 const storageKey = "campusseg-last-job";
+const selectedSceneStorageKey = "campusseg-selected-scene";
 const comparePageUrl = "./compare.html";
 const apiBaseStorageKey = "campusseg-api-base";
 const defaultApiBaseUrl = "http://127.0.0.1:8000";
+const segmentRequestTimeoutMs = 120000;
 const promptMapUrl = "./assets/prompt_map.json";
 const menuButton = document.querySelector(".menu-button");
 const siteHeader = document.querySelector(".site-header");
@@ -126,6 +128,10 @@ function pickResultUrl(result, keys) {
   return "";
 }
 
+function hasSceneImageSource() {
+  return Boolean(selectedFileUrl && !/^(blob:|data:)/i.test(selectedFileUrl));
+}
+
 function setProcessing(active) {
   isProcessing = active;
   if (extractButton) {
@@ -150,9 +156,39 @@ async function readSegmentResponse(response) {
   return { status: response.ok ? "success" : "error" };
 }
 
+async function readSegmentError(response) {
+  const fallback = `${response.status} ${response.statusText}`.trim();
+  try {
+    const contentType = response.headers.get("content-type") || "";
+    if (contentType.includes("application/json")) {
+      const body = await response.json();
+      if (typeof body?.detail === "string") return `${fallback} ${body.detail}`.trim();
+      if (Array.isArray(body?.detail)) {
+        const detail = body.detail
+          .map((item) => {
+            const location = Array.isArray(item.loc) ? item.loc.join(".") : "";
+            return [location, item.msg].filter(Boolean).join(": ");
+          })
+          .filter(Boolean)
+          .join("; ");
+        return `${fallback} ${detail}`.trim();
+      }
+    }
+    const text = await response.text();
+    return text ? `${fallback} ${text}`.trim() : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
 function createSegmentFormData() {
   const formData = new FormData();
-  formData.append("image", selectedFile, selectedFileName || selectedFile.name);
+  if (selectedFile) {
+    formData.append("image", selectedFile, selectedFileName || selectedFile.name);
+  }
+  if (hasSceneImageSource()) {
+    formData.append("scene_image", selectedFileUrl);
+  }
 
   if (selectedMethod === "sam2") {
     formData.append("x", String(selectedPoint.x));
@@ -193,8 +229,8 @@ function renderSegmentationResult(result) {
 function handleSegmentError(error) {
   const message = error?.message || label("接口调用失败", "Request failed");
   setText(canvasStatus, `处理失败 ${message}`, `Failed ${message}`);
-  setSlotText(maskSlot, "接口未返回结果", "No result returned");
-  setSlotText(pngSlot, "接口未返回结果", "No result returned");
+  setSlotText(maskSlot, message, message);
+  setSlotText(pngSlot, message, message);
   downloadButton && (downloadButton.disabled = true);
 }
 
@@ -213,17 +249,26 @@ async function runSegmentation() {
   setSlotText(maskSlot, "等待分割结果", "Waiting for mask");
   setSlotText(pngSlot, "等待 PNG 结果", "Waiting for PNG");
 
+  const controller = new AbortController();
+  const timeout = window.setTimeout(() => controller.abort(), segmentRequestTimeoutMs);
+
   try {
     const endpoint = getSegmentEndpoint();
     const response = await fetch(endpoint, {
       method: "POST",
       body: createSegmentFormData(),
+      signal: controller.signal,
     });
-    if (!response.ok) throw new Error(`${response.status} ${response.statusText}`.trim());
+    if (!response.ok) throw new Error(await readSegmentError(response));
     renderSegmentationResult(await readSegmentResponse(response));
   } catch (error) {
-    handleSegmentError(error);
+    if (error?.name === "AbortError") {
+      handleSegmentError(new Error(label("请求超时，请确认后端模型已安装并正常加载", "Request timed out. Check that backend models are installed and loaded")));
+    } else {
+      handleSegmentError(error);
+    }
   } finally {
+    window.clearTimeout(timeout);
     setProcessing(false);
     refreshWorkspace();
   }
@@ -329,7 +374,7 @@ let isProcessing = false;
 let generatedObjectUrls = [];
 
 function hasImage() {
-  return Boolean(selectedFile && selectedFileUrl && selectedFileDataUrl);
+  return Boolean((selectedFile && selectedFileUrl && selectedFileDataUrl) || hasSceneImageSource());
 }
 
 function targetText() {
@@ -376,40 +421,134 @@ function readImageFile(file) {
   reader.readAsDataURL(file);
 }
 
-function setImage(file) {
-  if (!file || !file.type.startsWith("image/")) return;
-  if (selectedFileUrl) URL.revokeObjectURL(selectedFileUrl);
-  clearGeneratedObjectUrls();
-  selectedFile = file;
-  selectedFileUrl = URL.createObjectURL(file);
-  selectedFileDataUrl = "";
-  selectedFileName = file.name;
+function sceneFileName(src) {
+  try {
+    const { pathname } = new URL(src, window.location.href);
+    return decodeURIComponent(pathname.split("/").pop() || "") || "campus-scene.jpg";
+  } catch {
+    return decodeURIComponent(String(src || "").split("/").pop() || "") || "campus-scene.jpg";
+  }
+}
+
+function revokeSelectedFileUrl() {
+  if (selectedFileUrl?.startsWith("blob:")) URL.revokeObjectURL(selectedFileUrl);
+}
+
+function renderSelectedImage(src, name) {
   selectedPoint = null;
   latestMaskUrl = "";
   latestPngUrl = "";
-  previewImage.src = selectedFileUrl;
-  previewImage.alt = file.name;
+  previewImage.src = src;
+  previewImage.alt = name;
   pointMarker?.classList.remove("visible");
   imageCanvas?.classList.remove("empty");
   imageCanvas?.classList.add("ready");
   emptyCanvas?.classList.add("hidden");
-  setText(uploadStatus, file.name, file.name);
+  setText(uploadStatus, name, name);
   setText(canvasStatus, "图像已载入", "Image loaded");
   disableCompareLink();
 
   if (sourceSlot) {
     sourceSlot.innerHTML = "";
     const image = document.createElement("img");
-    image.src = selectedFileUrl;
-    image.alt = file.name;
+    image.src = src;
+    image.alt = name;
     sourceSlot.append(image);
   }
 
   setSlotText(maskSlot, "等待结果", "Waiting for result");
   setSlotText(pngSlot, "等待结果", "Waiting for result");
   downloadButton && (downloadButton.disabled = true);
+}
+
+function setImage(file) {
+  if (!file || !file.type.startsWith("image/")) return;
+  revokeSelectedFileUrl();
+  clearGeneratedObjectUrls();
+  selectedFile = file;
+  selectedFileUrl = URL.createObjectURL(file);
+  selectedFileDataUrl = "";
+  selectedFileName = file.name;
+  renderSelectedImage(selectedFileUrl, file.name);
   readImageFile(file);
   refreshWorkspace();
+}
+
+function setSceneImagePreview(url, name = sceneFileName(url)) {
+  revokeSelectedFileUrl();
+  clearGeneratedObjectUrls();
+  selectedFile = null;
+  selectedFileUrl = url;
+  selectedFileDataUrl = "";
+  selectedFileName = name;
+  renderSelectedImage(url, name);
+  refreshWorkspace();
+}
+
+function dataUrlToFile(dataUrl, name) {
+  const [header = "", body = ""] = String(dataUrl || "").split(",");
+  const mime = header.match(/^data:([^;]+)/)?.[1] || "image/jpeg";
+  const binary = atob(body);
+  const bytes = new Uint8Array(binary.length);
+  for (let index = 0; index < binary.length; index += 1) {
+    bytes[index] = binary.charCodeAt(index);
+  }
+  return new File([bytes], name, { type: mime });
+}
+
+function waitForImageLoad(image) {
+  return new Promise((resolve, reject) => {
+    if (!image) {
+      reject(new Error("Image is missing"));
+      return;
+    }
+    if (image.complete && image.naturalWidth) {
+      resolve();
+      return;
+    }
+    image.addEventListener("load", resolve, { once: true });
+    image.addEventListener("error", () => reject(new Error("Image load failed")), { once: true });
+  });
+}
+
+async function imageElementToFile(image, name) {
+  await waitForImageLoad(image);
+  const canvas = document.createElement("canvas");
+  canvas.width = image.naturalWidth;
+  canvas.height = image.naturalHeight;
+  const context = canvas.getContext("2d");
+  if (!context || !canvas.width || !canvas.height) throw new Error("Image canvas is unavailable");
+  context.drawImage(image, 0, 0);
+
+  return new Promise((resolve, reject) => {
+    canvas.toBlob((blob) => {
+      if (blob) {
+        resolve(new File([blob], name, { type: blob.type || "image/jpeg" }));
+      } else {
+        reject(new Error("Image export failed"));
+      }
+    }, "image/jpeg", 0.95);
+  });
+}
+
+function readCachedScene(sceneImage) {
+  try {
+    const cached = JSON.parse(sessionStorage.getItem(selectedSceneStorageKey) || "null");
+    if (!cached?.src) return null;
+    const cachedUrl = new URL(cached.src, window.location.href).href;
+    const requestedUrl = new URL(sceneImage, window.location.href).href;
+    return cachedUrl === requestedUrl ? cached : null;
+  } catch {
+    return null;
+  }
+}
+
+function syncMethodButtons() {
+  methodButtons.forEach((button) => {
+    const active = button.dataset.method === selectedMethod;
+    button.classList.toggle("active", active);
+    button.setAttribute("aria-selected", String(active));
+  });
 }
 
 async function preloadSceneImageFromQuery() {
@@ -418,25 +557,43 @@ async function preloadSceneImageFromQuery() {
   const sceneImage = params.get("sceneImage");
   if (!sceneImage) return;
 
+  const name = sceneFileName(sceneImage);
+  setSceneImagePreview(sceneImage, name);
+
+  const scenePrompt = params.get("scenePrompt");
+  if (scenePrompt && targetPrompt) {
+    targetPrompt.value = scenePrompt;
+    selectedMethod = "langsam";
+    syncMethodButtons();
+  }
+
   try {
+    const cachedScene = readCachedScene(sceneImage);
+    if (/^data:image\//i.test(cachedScene?.dataUrl || "")) {
+      try {
+        setImage(dataUrlToFile(cachedScene.dataUrl, cachedScene.name || name));
+        return;
+      } catch {
+        setSceneImagePreview(sceneImage, name);
+      }
+    }
+
     const response = await fetch(sceneImage);
-    if (!response.ok) return;
+    if (!response.ok) throw new Error("Scene image request failed");
     const blob = await response.blob();
-    const name = sceneImage.split("/").pop() || "campus-scene.jpg";
     setImage(new File([blob], name, { type: blob.type || "image/jpeg" }));
-    const scenePrompt = params.get("scenePrompt");
+  } catch {
+    try {
+      setImage(await imageElementToFile(previewImage, name));
+    } catch {
+      setText(canvasStatus, "图像已载入", "Image loaded");
+    }
+  } finally {
     if (scenePrompt && targetPrompt) {
       targetPrompt.value = scenePrompt;
       selectedMethod = "langsam";
-      methodButtons.forEach((button) => {
-        const active = button.dataset.method === selectedMethod;
-        button.classList.toggle("active", active);
-        button.setAttribute("aria-selected", String(active));
-      });
+      syncMethodButtons();
     }
-  } catch {
-    setText(canvasStatus, "图片载入失败", "Image load failed");
-  } finally {
     refreshWorkspace();
   }
 }
@@ -445,7 +602,7 @@ function saveComparisonJob(result = {}) {
   const maskUrl = latestMaskUrl || pickResultUrl(result, ["mask_url", "maskUrl", "mask", "annotated_url", "result_url"]);
   const pngUrl = latestPngUrl || pickResultUrl(result, ["png_url", "pngUrl", "png", "asset_url", "output_url"]);
   const job = {
-    imageDataUrl: selectedFileDataUrl,
+    imageDataUrl: selectedFileDataUrl || (hasSceneImageSource() ? selectedFileUrl : ""),
     fileName: selectedFileName,
     method: selectedMethod === "sam2" ? "SAM2" : "LangSAM",
     target: targetText(),
@@ -464,6 +621,11 @@ function saveComparisonJob(result = {}) {
   }
 }
 
+function clearComparisonJob() {
+  localStorage.removeItem(storageKey);
+  sessionStorage.removeItem(storageKey);
+}
+
 dropArea?.addEventListener("click", () => imageFile?.click());
 
 imageFile?.addEventListener("change", (event) => {
@@ -474,11 +636,7 @@ imageFile?.addEventListener("change", (event) => {
 methodButtons.forEach((button) => {
   button.addEventListener("click", () => {
     selectedMethod = button.dataset.method;
-    methodButtons.forEach((item) => {
-      const active = item === button;
-      item.classList.toggle("active", active);
-      item.setAttribute("aria-selected", String(active));
-    });
+    syncMethodButtons();
     refreshWorkspace();
   });
 });
@@ -552,8 +710,9 @@ extractButton?.addEventListener("click", runSegmentation);
 downloadButton?.addEventListener("click", downloadLatestPng);
 
 clearButton?.addEventListener("click", () => {
-  if (selectedFileUrl) URL.revokeObjectURL(selectedFileUrl);
+  revokeSelectedFileUrl();
   clearGeneratedObjectUrls();
+  clearComparisonJob();
   selectedFile = null;
   selectedFileUrl = "";
   selectedFileDataUrl = "";
@@ -663,6 +822,10 @@ function renderComparison() {
   );
 }
 
+window.addEventListener("storage", (event) => {
+  if (event.key === storageKey) renderComparison();
+});
+
 const sceneOptions = document.querySelectorAll(".scene-card");
 const sceneKicker = document.querySelector("#sceneKicker");
 const sceneTitle = document.querySelector("#sceneTitle");
@@ -705,6 +868,8 @@ const sceneCopy = {
     images: [
       sceneImage("library", "09_medium_library_books_desk.jpg", "书本", "Books", "book", "中等", "Medium"),
       sceneImage("library", "18_hard_laptop_window_reflection.jpg", "电脑", "Laptop", "laptop", "较难", "Hard"),
+      sceneImage("library", "14_medium_canteen_chair.jpg", "椅子", "Chair", "chair", "中等", "Medium"),
+      sceneImage("library", "15_medium_cafe_table.jpg", "桌子", "Table", "table", "中等", "Medium"),
     ],
   },
   dorm: {
@@ -728,8 +893,9 @@ const sceneCopy = {
     zhCopy: "可放入餐盘、饮品、餐桌物品和校园生活图片",
     enCopy: "Prepared images can include trays, drinks, table objects, and campus life photos",
     images: [
-      sceneImage("cafeteria", "14_medium_canteen_chair.jpg", "椅子", "Chair", "chair", "中等", "Medium"),
-      sceneImage("cafeteria", "15_medium_cafe_table.jpg", "桌子", "Table", "table", "中等", "Medium"),
+      sceneImage("cafeteria", "27_medium_cafeteria_counter_tables.jpg", "餐桌", "Table", "table", "中等", "Medium"),
+      sceneImage("cafeteria", "28_hard_cafeteria_students_people.jpg", "人物", "Person", "person", "较难", "Hard"),
+      sceneImage("cafeteria", "29_medium_cafeteria_hall_chairs.jpg", "椅子", "Chair", "chair", "中等", "Medium"),
     ],
   },
   outdoor: {
@@ -761,9 +927,52 @@ const sceneCopy = {
 
 let activeScene = "classroom";
 
+function saveSceneSelection(image, dataUrl = "") {
+  try {
+    sessionStorage.setItem(
+      selectedSceneStorageKey,
+      JSON.stringify({
+        src: image.src,
+        name: sceneFileName(image.src),
+        prompt: image.prompt,
+        target: image.zhTarget,
+        dataUrl,
+      })
+    );
+  } catch {
+    // The URL handoff still works when storage quota is unavailable.
+  }
+}
+
+function cacheSceneImageForWorkspace(image, renderedImage) {
+  saveSceneSelection(image);
+  if (!renderedImage) return;
+
+  const writeDataUrl = () => {
+    try {
+      const canvas = document.createElement("canvas");
+      canvas.width = renderedImage.naturalWidth;
+      canvas.height = renderedImage.naturalHeight;
+      const context = canvas.getContext("2d");
+      if (!context || !canvas.width || !canvas.height) return;
+      context.drawImage(renderedImage, 0, 0);
+      saveSceneSelection(image, canvas.toDataURL("image/jpeg", 0.95));
+    } catch {
+      saveSceneSelection(image);
+    }
+  };
+
+  if (renderedImage.complete && renderedImage.naturalWidth) {
+    writeDataUrl();
+  } else {
+    renderedImage.addEventListener("load", writeDataUrl, { once: true });
+  }
+}
+
 function selectSceneImage(image, button) {
   if (!image || !sceneUseLink) return;
   sceneImageArea?.querySelectorAll(".scene-material-card").forEach((node) => node.classList.toggle("active", node === button));
+  cacheSceneImageForWorkspace(image, button?.querySelector("img"));
   const params = new URLSearchParams({
     sceneImage: image.src,
     sceneTarget: image.zhTarget,

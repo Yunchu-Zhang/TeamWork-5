@@ -68,3 +68,16 @@ async def save_upload_image(upload: UploadFile, upload_dir: Path) -> LoadedImage
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_bytes(raw)
     return LoadedImage(image=image, path=path, stem=stem)
+
+
+def save_existing_image(source: Path, upload_dir: Path) -> LoadedImage:
+    raw = source.read_bytes()
+    if not raw:
+        raise ValueError("Scene image is empty")
+
+    image = Image.open(BytesIO(raw)).convert("RGB")
+    stem = make_safe_stem(source.name)
+    path = upload_dir / f"{stem}{image_suffix(source.name, image)}"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(raw)
+    return LoadedImage(image=image, path=path, stem=stem)
